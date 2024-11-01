@@ -6,20 +6,21 @@ Maxime Cruzel
 
 This project is licensed under the MIT License.
 
+
 # local_ws_categorylist
 
 **Webservice function for category list platform**
 
 ## Description
 
-The `local_ws_categorylist` plugin is a Moodle plugin that provides a web service to list all available course categories on the platform, including their unique ID (`id`), name (`name`), and full hierarchical path (`path`).
+The `local_ws_categorylist` plugin is a Moodle plugin that provides a web service to list all available course categories on the platform, including their unique ID (`id`), name (`name`), and full hierarchical path (`path`). The `path` now returns category IDs instead of names, separated by slashes (`/`).
 
 ## Features
 
 - **Category List**: Retrieves available course categories on Moodle with the following details:
   - `id`: the unique identifier for the category.
   - `name`: the name of the category.
-  - `path`: the complete path of the category within Moodle’s hierarchy (displayed as category names separated by `/`).
+  - `path`: the complete path of the category in Moodle’s hierarchy, displayed as category IDs separated by `/`.
 
 ## Requirements
 
@@ -47,12 +48,12 @@ The `local_ws_categorylist` plugin is a Moodle plugin that provides a web servic
   {
     "id": 1,
     "name": "Main Category",
-    "path": "Main Category"
+    "path": "1"
   },
   {
     "id": 2,
     "name": "Sub-category",
-    "path": "Main Category / Sub-category"
+    "path": "1 / 2"
   }
 ]
 ```
@@ -74,6 +75,11 @@ curl -X POST "https://your-moodle-site.com/webservice/rest/server.php" \
 
 This plugin can be modified to further restrict accessible categories or include additional information as needed.
 
-## Support and Contributions
+## Author
 
-For questions or feature requests, please open a ticket or submit a pull request on the plugin’s GitHub repository (if available).
+Maxime Cruzel
+
+## License
+
+This project is licensed under the MIT License.
+
