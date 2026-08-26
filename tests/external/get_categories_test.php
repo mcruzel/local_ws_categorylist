@@ -58,6 +58,20 @@ final class get_categories_test extends \externallib_advanced_testcase {
     }
 
     /**
+     * Hide every category currently visible, so the site holds nothing a plain user may see.
+     *
+     * A Moodle site always carries at least one category, unlike courses, so an empty result
+     * is reached through visibility rather than through an empty table.
+     */
+    private function hide_every_category(): void {
+        foreach (\core_course_category::get_all(['returnhidden' => true]) as $category) {
+            if ($category->visible) {
+                $category->hide();
+            }
+        }
+    }
+
+    /**
      * The service returns visible categories with an id path and no leading slash.
      */
     public function test_execute_returns_id_paths(): void {
@@ -93,12 +107,16 @@ final class get_categories_test extends \externallib_advanced_testcase {
     }
 
     /**
-     * A site without any category is a valid result, not an error.
+     * Seeing no category at all is a valid result, not an error.
      */
-    public function test_execute_returns_an_empty_list_when_no_category_exists(): void {
+    public function test_execute_returns_an_empty_list_when_the_user_sees_nothing(): void {
         $this->resetAfterTest();
         $this->setAdminUser();
 
+        $this->getDataGenerator()->create_category(['name' => 'Sciences']);
+        $this->hide_every_category();
+
+        $this->setUser($this->getDataGenerator()->create_user());
         $result = $this->call_service();
 
         $this->assertSame([], $result['categories']);
@@ -117,14 +135,14 @@ final class get_categories_test extends \externallib_advanced_testcase {
         $generator->create_category(['name' => 'Closed', 'visible' => 0]);
 
         $this->setUser($generator->create_user());
-        $result = $this->call_service();
-        $this->assertSame(['Open'], array_column($result['categories'], 'name'));
-        $this->assertSame(1, $result['total']);
+        $names = array_column($this->call_service()['categories'], 'name');
+        $this->assertContains('Open', $names);
+        $this->assertNotContains('Closed', $names);
 
         $this->setAdminUser();
-        $result = $this->call_service();
-        $this->assertCount(2, $result['categories']);
-        $this->assertSame(2, $result['total']);
+        $names = array_column($this->call_service()['categories'], 'name');
+        $this->assertContains('Open', $names);
+        $this->assertContains('Closed', $names);
     }
 
     /**
@@ -154,24 +172,24 @@ final class get_categories_test extends \externallib_advanced_testcase {
         $this->setAdminUser();
 
         for ($i = 1; $i <= 5; $i++) {
-            $this->getDataGenerator()->create_category(['name' => "Category $i"]);
+            $this->getDataGenerator()->create_category(['name' => "Branch $i"]);
         }
 
-        $first = $this->call_service(0, 2);
-        $second = $this->call_service(1, 2);
-        $third = $this->call_service(2, 2);
+        $total = $this->call_service()['total'];
+        $this->assertGreaterThanOrEqual(5, $total);
 
-        $this->assertCount(2, $first['categories']);
-        $this->assertCount(2, $second['categories']);
-        $this->assertCount(1, $third['categories']);
-        $this->assertSame(5, $first['total']);
+        $perpage = 2;
+        $seen = [];
+        for ($page = 0; $page * $perpage < $total; $page++) {
+            $result = $this->call_service($page, $perpage);
+            $this->assertSame($total, $result['total'], 'total must not change between pages');
+            $this->assertLessThanOrEqual($perpage, count($result['categories']));
+            $seen = array_merge($seen, array_column($result['categories'], 'id'));
+        }
 
-        $seen = array_merge(
-            array_column($first['categories'], 'id'),
-            array_column($second['categories'], 'id'),
-            array_column($third['categories'], 'id'),
-        );
-        $this->assertCount(5, array_unique($seen));
+        // Paging covers the whole set exactly once, with no gap and no repeat.
+        $this->assertCount($total, $seen);
+        $this->assertCount($total, array_unique($seen));
     }
 
     /**
@@ -182,13 +200,16 @@ final class get_categories_test extends \externallib_advanced_testcase {
         $this->setAdminUser();
 
         $this->getDataGenerator()->create_category(['name' => 'Sciences']);
+        $total = $this->call_service()['total'];
 
+        // A page number large enough to overflow page * perpage must not raise a TypeError.
         $result = $this->call_service(PHP_INT_MAX, tools::MAX_PERPAGE);
         $this->assertSame([], $result['categories']);
-        $this->assertSame(1, $result['total']);
+        $this->assertSame($total, $result['total']);
 
+        // Negative values fall back to the first page and to the maximum page size.
         $result = $this->call_service(-5, -10);
-        $this->assertCount(1, $result['categories']);
+        $this->assertCount(min($total, tools::MAX_PERPAGE), $result['categories']);
     }
 
     /**
@@ -201,7 +222,10 @@ final class get_categories_test extends \externallib_advanced_testcase {
         $this->getDataGenerator()->create_category(['name' => 'Maths <b>advanced</b>']);
 
         $names = array_column($this->call_service()['categories'], 'name');
+        $maths = array_values(array_filter($names, fn($name) => str_starts_with($name, 'Maths')));
 
-        $this->assertStringNotContainsString('<b>', $names[0]);
+        $this->assertCount(1, $maths, 'the created category must be present in the result');
+        $this->assertStringNotContainsString('<b>', $maths[0]);
+        $this->assertStringContainsString('advanced', $maths[0]);
     }
 }
