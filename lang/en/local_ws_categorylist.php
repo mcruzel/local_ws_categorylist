@@ -1,4 +1,28 @@
 <?php
-$string['pluginname'] = 'Webservice function for category list platform';
-$string['categorynotfound'] = 'No categories found on the platform.';
-$string['listcategories'] = 'List Categories';
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Strings for the local_ws_categorylist plugin.
+ *
+ * @package    local_ws_categorylist
+ * @copyright  2026 Maxime Cruzel
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+defined('MOODLE_INTERNAL') || die();
+
+$string['pluginname'] = 'Web service: platform category list';
+$string['privacy:metadata'] = 'The Web service: platform category list plugin does not store any personal data.';
