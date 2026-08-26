@@ -14,19 +14,24 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
+namespace local_ws_categorylist\privacy;
+
+use core_privacy\local\metadata\null_provider;
+
 /**
- * Version details for the category list web service plugin.
+ * Privacy provider declaring that this plugin stores no personal data.
  *
  * @package    local_ws_categorylist
  * @copyright  2026 Maxime Cruzel
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-defined('MOODLE_INTERNAL') || die();
-
-$plugin->component = 'local_ws_categorylist';
-$plugin->version = 2026082600;
-$plugin->requires = 2024100700; // Moodle 4.5 LTS.
-$plugin->supported = [405, 502]; // Moodle 4.5 to 5.2.
-$plugin->maturity = MATURITY_STABLE;
-$plugin->release = '2.0.0';
+class provider implements null_provider {
+    /**
+     * Returns the language string explaining why this plugin stores no personal data.
+     *
+     * @return string
+     */
+    public static function get_reason(): string {
+        return 'privacy:metadata';
+    }
+}

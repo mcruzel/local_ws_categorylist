@@ -1,53 +1,60 @@
-## Author
-
-Maxime Cruzel
-
-## License
-
-This project is licensed under the MIT License.
-
-
 # local_ws_categorylist
 
-**Webservice function for category list platform**
+**Web service function for the platform category list**
 
 ## Description
 
-The `local_ws_categorylist` plugin is a Moodle plugin that provides a web service to list all available course categories on the platform, including their unique ID (`id`), name (`name`), and full hierarchical path (`path`). The `path` now returns category IDs instead of names, separated by slashes (`/`).
+`local_ws_categorylist` adds a single Moodle web service function that lists the course categories
+the calling user is allowed to see, with their unique ID (`id`), their name (`name`) and their full
+hierarchical path (`path`), expressed as category IDs separated by ` / `.
 
-## Features
-
-- **Category List**: Retrieves available course categories on Moodle with the following details:
-  - `id`: the unique identifier for the category.
-  - `name`: the name of the category.
-  - `path`: the complete path of the category in Moodle’s hierarchy, displayed as category IDs separated by `/`.
+Category names are passed through Moodle's filters, so multilingual content is resolved in the
+caller's language. Hidden categories are returned only to users who hold
+`moodle/category:viewhiddencategories` in the relevant category context.
 
 ## Requirements
 
-- **Moodle**: Minimum version required: 3.11.
-- **Permissions**: Users must have the `moodle/category:manage` capability to access this service.
+- **Moodle**: 4.5 LTS to 5.2.
+- **PHP**: as required by your Moodle version — 8.1+ on Moodle 4.5, 8.3+ on Moodle 5.2.
+- **Capability**: callers need `moodle/category:viewcourselist`, which is granted by default to
+  authenticated users and guests.
 
 ## Installation
 
-1. Download the `local_ws_categorylist` folder into the `local` directory of your Moodle installation.
-2. Access the site administration to complete the plugin installation.
-3. Enable web services in Moodle administration if needed and assign permissions to authorized users.
+Copy the plugin into the `local` directory of your Moodle installation, under the name
+`ws_categorylist` — **not** `local_ws_categorylist`, which would produce the wrong component name:
+
+| Moodle version | Destination |
+| --- | --- |
+| 4.5 to 5.0 | `local/ws_categorylist/` |
+| 5.1 and later | `public/local/ws_categorylist/` |
+
+Moodle 5.1 moved the served code into a `public/` directory, so `$CFG->dirroot` now points at
+`<installation root>/public`. Then visit *Site administration → Notifications* to complete the
+installation, enable web services if needed, and grant a token to the authorised users.
 
 ## Usage
 
-### Web Service Endpoint
+### Web service function
 
 **Function**: `local_ws_categorylist_get_categories`
 
-**Description**: Retrieves the list of available course categories on Moodle.
+**Service short name**: `local_ws_categorylist`
 
-**Example Response**:
+**Parameters**: both are optional.
+
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| `page` | int | `0` | Zero-based index of the page to return. |
+| `perpage` | int | `100` | Number of categories per page. Capped at 500; `0` means the default. |
+
+**Example response**:
 
 ```json
 [
   {
     "id": 1,
-    "name": "Main Category",
+    "name": "Main category",
     "path": "1"
   },
   {
@@ -58,22 +65,31 @@ The `local_ws_categorylist` plugin is a Moodle plugin that provides a web servic
 ]
 ```
 
-### Testing the Web Service
+An empty list is a valid response: a user who can see no category receives `[]`, not an error.
 
-To test this web service, use a tool like `curl` or Postman with a valid API token for a user with the required permissions.
-
-**Example cURL Request**:
+### Example request
 
 ```bash
-curl -X POST "https://your-moodle-site.com/webservice/rest/server.php" \
+curl -X POST "https://your-moodle-site.example/webservice/rest/server.php" \
      -d "wstoken=YOUR_TOKEN" \
      -d "wsfunction=local_ws_categorylist_get_categories" \
      -d "moodlewsrestformat=json"
 ```
 
-## Customization
+## Notes for developers
 
-This plugin can be modified to further restrict accessible categories or include additional information as needed.
+Visibility depends on capabilities evaluated in each category context, which cannot be expressed in
+SQL. The plugin therefore reads the category tree in a single query — contexts preloaded — filters
+it in PHP, and slices the requested page out of the result. `page` and `perpage` bound the
+*response*, not the query.
+
+Run the checks locally the way CI does:
+
+```bash
+moodle-plugin-ci phpcs --max-warnings 0
+moodle-plugin-ci phpdoc --max-warnings 0
+moodle-plugin-ci phpunit
+```
 
 ## Author
 
@@ -81,5 +97,4 @@ Maxime Cruzel
 
 ## License
 
-This project is licensed under the MIT License.
-
+Licensed under the GNU General Public License v3 or later. See [LICENSE](LICENSE).
